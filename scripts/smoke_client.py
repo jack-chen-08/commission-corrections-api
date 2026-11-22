@@ -1,21 +1,31 @@
 #!/usr/bin/env python
 """真实 HTTP 冒烟客户端：对运行中的服务打完整链路，并断言 AC 结果。
 
-用法：python scripts/smoke_client.py --port 8137 --db ./smoke.db
+用法：
+    python scripts/smoke_client.py --port 8137 --db ./smoke.db
+    DATABASE_URL=postgresql+psycopg://... python scripts/smoke_client.py --port 8137
+（--database-url 优先于 --db；用于在真实 PostgreSQL 上复跑同一套断言。）
 """
 
 from __future__ import annotations
 
 import argparse
 import datetime as dt
+import os
+import re
 import sys
 
 import httpx
-from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 sys.path.insert(0, ".")
+from commission_corrections.db import build_engine  # noqa: E402
 from commission_corrections.models import CommissionRecord  # noqa: E402
+
+
+def _redact(url: str) -> str:
+    """日志里不出现连接串口令。"""
+    return re.sub(r"//[^/@]*@", "//***@", url)
 
 P = "/api/admin/commission/corrections"
 ORG = "org-smoke"
@@ -39,12 +49,18 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--port", type=int, default=8137)
     ap.add_argument("--db", default="./smoke.db")
+    ap.add_argument(
+        "--database-url",
+        default=os.environ.get("SMOKE_DATABASE_URL") or os.environ.get("DATABASE_URL", ""),
+        help="直连断言用的库；缺省则用 --db 指定的 SQLite 文件",
+    )
     args = ap.parse_args()
     base = f"http://127.0.0.1:{args.port}"
     month = dt.datetime.now().strftime("%Y-%m")
     c = httpx.Client(base_url=base, timeout=10)
 
-    print(f"服务: {base}   库: {args.db}   月份: {month}")
+    db_url = args.database_url or f"sqlite+pysqlite:///{args.db}"
+    print(f"服务: {base}   库: {_redact(db_url)}   月份: {month}")
     print("\n[1] 健康检查与建表")
     check("GET /healthz == 200", c.get("/healthz").status_code == 200)
 
@@ -77,7 +93,7 @@ def main() -> None:
     check("月结合计 = 100000", st["total_cents"] == 100_000)
 
     print("\n[5] AC3 已锁定月份重算 → 差额调整，原记录保持 locked")
-    eng = create_engine(f"sqlite+pysqlite:///{args.db}", future=True)
+    eng = build_engine(db_url)
     Session = sessionmaker(bind=eng, expire_on_commit=False)
     with Session() as s:
         rec = CommissionRecord(

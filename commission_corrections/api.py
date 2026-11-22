@@ -6,6 +6,7 @@
 
 from __future__ import annotations
 
+import os
 from typing import Iterator
 
 from fastapi import Depends, FastAPI, Query, Request, Response
@@ -39,7 +40,12 @@ def get_db(request: Request) -> Iterator[Session]:
         session.close()
 
 
-def create_app(engine=None, create_all: bool = True) -> FastAPI:
+def _auto_create_default() -> bool:
+    """本地/测试便利：默认按模型建表；生产用 Alembic 迁移时设 ``AUTO_CREATE_SCHEMA=0``。"""
+    return os.environ.get("AUTO_CREATE_SCHEMA", "1") not in ("0", "false", "False")
+
+
+def create_app(engine=None, create_all: bool | None = None) -> FastAPI:
     app = FastAPI(
         title="S6-COMM-016 提成人工调整与重算",
         version="1.0.0",
@@ -47,6 +53,8 @@ def create_app(engine=None, create_all: bool = True) -> FastAPI:
     )
     eng = engine or build_engine()
     app.state.sessionmaker = get_sessionmaker(eng)
+    if create_all is None:
+        create_all = _auto_create_default()
     if create_all:
         from .db import Base
 

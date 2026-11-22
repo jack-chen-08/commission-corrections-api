@@ -3,7 +3,7 @@
 会员空间平台提成结算的可更正链路：**人工调整走双人复核**、**重算全程可追溯**、
 **锁账月份不篡改历史（差额制）**、**每一笔更正都留审计**。
 
-- 技术栈：Python 3.12 · FastAPI · SQLAlchemy 2.0 · Pydantic v2 · PostgreSQL 16（本地/测试用 SQLite）
+- 技术栈：Python 3.12 · FastAPI · SQLAlchemy 2.0 · Pydantic v2 · Alembic（schema 迁移）· PostgreSQL 16（本地/测试用 SQLite）
 - 金额：一律「分」为单位的整数，无浮点、无 Decimal、无真除法
 - 与 S6-COMM-001（`compute_gross` 超额累进阶梯 + 折扣系数）共用同一套取整口径，本仓以 `commission_corrections/engine.py` 内置该纯函数，避免跨服务调用带来的口径漂移
 
@@ -13,12 +13,33 @@
 
 ```bash
 python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
-bash run_tests.sh          # 单测 17 例 + 真实 HTTP 端到端冒烟 11 项断言
+bash run_tests.sh              # 单测 17 例 + 真实 HTTP 端到端冒烟 11 项断言（SQLite）
+bash scripts/migrate_verify.sh # 迁移证据：临时 PG16 容器 → Alembic → 全链路冒烟（需 Docker）
 uvicorn commission_corrections.api:app --reload --port 8000   # 起服务
 ```
 
 零外部依赖：不需要 Docker、不需要 Redis、不需要跑上游服务。默认 SQLite 文件库，
 生产把 `DATABASE_URL` 换成 PostgreSQL 16 即可，代码无需改动。
+
+### 数据库迁移（Alembic）
+
+客户统一技术约定要求 schema 由 Alembic 管理（不是 `create_all`）。连接串只从环境变量读，
+`alembic.ini` 里不写任何凭证：
+
+```bash
+export DATABASE_URL="postgresql+psycopg://user:pass@host:5432/commission"
+alembic upgrade head        # 建表（含 alembic_version 版本表）
+alembic current             # 当前版本
+alembic check               # 模型与库结构是否漂移（CI 可作门禁）
+alembic downgrade base      # 回退全部迁移
+```
+
+- 初始迁移：`alembic/versions/0001_init_commission_corrections.py`（3 张业务表 + 2 个索引 + 1 个唯一约束）
+- 服务启动时默认 `AUTO_CREATE_SCHEMA=1`（本地 sqlite 便利）；**生产/迁移模式设
+  `AUTO_CREATE_SCHEMA=0`**，表全部来自迁移，启动不再隐式建表。
+- 一键复现证据：`bash scripts/migrate_verify.sh` —— 起临时 PostgreSQL 16 容器，
+  跑 `upgrade head` → `alembic check` → 降级/升级往返 → `AUTO_CREATE_SCHEMA=0` 起服务打 11 项真实 HTTP 断言，
+  输出留档 `docs/migration_verify_output.txt`（口令运行时随机生成，不落盘、不进仓库）。
 
 ---
 
@@ -137,8 +158,10 @@ commission_corrections/
   schemas.py    Pydantic 请求响应模型
   iam.py        身份角色与 org 范围（S2-IAM 本地桩，可替换）
   engine.py     compute_gross 纯函数（与 S6-COMM-001 同口径）
+alembic/        迁移环境 env.py（读 DATABASE_URL）+ versions/0001_init_commission_corrections.py
+alembic.ini     仅保留 Alembic 配置，sqlalchemy.url 留空（凭证只走环境变量）
 tests/          17 例单测，AC1–AC4 逐条命名
-scripts/        smoke_http.sh（起真实服务打全链路）+ smoke_client.py
+scripts/        smoke_http.sh（起真实服务打全链路）+ smoke_client.py + migrate_verify.sh（迁移证据）
 run_tests.sh    一键：单测 + 冒烟
 ```
 

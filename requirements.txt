@@ -4,6 +4,8 @@ SQLAlchemy==2.1.9
 pydantic==2.14.4
 # 生产 PostgreSQL 16 驱动（本地 SQLite 不需要）
 psycopg[binary]==3.2.9
+# 数据库迁移（客户统一技术约定：Alembic 管理 schema，不用 create_all 上线）
+alembic==1.20.1
 # 测试
 pytest==9.2.0
 httpx==0.28.1

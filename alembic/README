@@ -1,0 +1,11 @@
+Alembic schema 迁移（S6-COMM-016）
+
+连接串只从环境变量 DATABASE_URL 读取，alembic.ini 不含凭证。
+
+    alembic upgrade head      # 建表 / 升到最新
+    alembic current           # 当前版本
+    alembic check             # 模型与库结构漂移检查
+    alembic downgrade base    # 回退全部迁移
+    alembic revision --autogenerate -m "说明"   # 改模型后生成新迁移
+
+一键复现证据（临时 PG16 容器 + 全链路 HTTP 冒烟）：bash scripts/migrate_verify.sh
