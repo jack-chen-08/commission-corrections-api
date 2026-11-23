@@ -1,8 +1,6 @@
-__pycache__/
-*.py[cod]
 .venv/
-*.db
-*.sqlite3
+__pycache__/
+*.pyc
 .pytest_cache/
 .env
-docs/verify_output.txt
+*.log

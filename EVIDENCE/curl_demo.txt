@@ -1,0 +1,251 @@
+== 0. 造演示数据（虚构企业：青禾示例科技有限公司 / 合同 FICT-DEMO-2026-0001）
+ORG_ID=33333333-3333-4333-8333-333333333333 CONTRACT_ID=77777777-7777-4777-8777-777777777777 PAYMENT_ID=88888888-8888-4888-8888-888888888888 原始提成记录=9a9a9a9a-9a9a-4a9a-8a9a-9a9a9a9a9a9a (2026-09, 10000 分)
+
+== 1. 申请人提交人工调整 +320000 分（原因：数据录入错误）
+HTTP 201
+{
+    "id": "d804a177-567f-4f41-aea5-2dd228a81cb7",
+    "org_id": "33333333-3333-4333-8333-333333333333",
+    "site_id": "44444444-4444-4444-8444-444444444444",
+    "contract_id": "77777777-7777-4777-8777-777777777777",
+    "payment_id": "88888888-8888-4888-8888-888888888888",
+    "salesperson_id": "55555555-5555-4555-8555-555555555555",
+    "period_month": "2026-09",
+    "kind": "adjustment",
+    "origin": "manual",
+    "amount_cents": 320000,
+    "status": "pending",
+    "voided_reason": null,
+    "supersedes_id": null,
+    "reason_category": "数据录入错误",
+    "note": "虚构演示：财务复核发现首期回款少记，按复核单补差 3200 元。",
+    "trace": {
+        "origin": "manual_input",
+        "calculation": {
+            "applied": false,
+            "note": "人工调整不经过规则表计算，金额由申请人直接给定并留痕"
+        },
+        "inputs": {
+            "contract_id": "77777777-7777-4777-8777-777777777777",
+            "contract_no": "FICT-DEMO-2026-0001",
+            "salesperson_id": "55555555-5555-4555-8555-555555555555",
+            "contract_salesperson_id": "55555555-5555-4555-8555-555555555555",
+            "salesperson_changed": false,
+            "payment_id": "88888888-8888-4888-8888-888888888888",
+            "period_month": "2026-09",
+            "amount_cents": 320000,
+            "reason_category": "数据录入错误",
+            "note": "虚构演示：财务复核发现首期回款少记，按复核单补差 3200 元。"
+        },
+        "approval_chain": [
+            {
+                "step": 1,
+                "action": "submitted",
+                "actor_id": "66666666-6666-4666-8666-666666666666",
+                "actor_roles": [
+                    "sales_rep"
+                ],
+                "at": "2026-11-23T16:36:47.004674+00:00",
+                "amount_cents": 320000
+            }
+        ]
+    },
+    "approval_chain": [
+        {
+            "step": 1,
+            "action": "submitted",
+            "actor_id": "66666666-6666-4666-8666-666666666666",
+            "actor_roles": [
+                "sales_rep"
+            ],
+            "at": "2026-11-23T16:36:47.004674+00:00",
+            "amount_cents": 320000
+        }
+    ],
+    "month_locked": false,
+    "created_at": "2026-11-23T16:36:47.001467+00:00",
+    "created_by": "66666666-6666-4666-8666-666666666666",
+    "updated_at": "2026-11-23T16:36:47.001467+00:00"
+}
+
+== 2. 审批前月结单口径（2026-09）：pending 调整不计入 total_cents
+{
+    "org_id": "33333333-3333-4333-8333-333333333333",
+    "period_month": "2026-09",
+    "locked": false,
+    "total_cents": 10000,
+    "active_count": 1,
+    "pending_total_cents": 320000,
+    "pending_count": 1,
+    "voided_total_cents": 0,
+    "voided_count": 0,
+    "by_status": {
+        "active": {
+            "count": 1,
+            "amount_cents": 10000
+        },
+        "pending": {
+            "count": 1,
+            "amount_cents": 320000
+        }
+    }
+}
+
+== 3. 申请人本人（同时具备招商主管角色）审批自己的调整（应 403 SELF_APPROVAL_FORBIDDEN）
+HTTP 403
+{
+    "detail": {
+        "code": "SELF_APPROVAL_FORBIDDEN",
+        "message": "不得审批本人提交的调整，需第二人审批"
+    }
+}
+
+== 4. 招商主管（第二人）审批通过
+HTTP 200
+{
+  "id": "d804a177-567f-4f41-aea5-2dd228a81cb7",
+  "status": "active",
+  "amount_cents": 320000,
+  "period_month": "2026-09",
+  "month_locked": false,
+  "reason_category": "数据录入错误",
+  "approval_chain": [
+    {
+      "at": "2026-11-23T16:36:47.004674+00:00",
+      "step": 1,
+      "action": "submitted",
+      "actor_id": "66666666-6666-4666-8666-666666666666",
+      "actor_roles": [
+        "sales_rep"
+      ],
+      "amount_cents": 320000
+    },
+    {
+      "step": 2,
+      "action": "approved",
+      "actor_id": "a1a1a1a1-a1a1-4a1a-8a1a-a1a1a1a1a1a1",
+      "actor_roles": [
+        "channel_supervisor"
+      ],
+      "at": "2026-11-23T16:36:47.179535+00:00",
+      "comment": "财务复核单齐备，同意补差"
+    }
+  ]
+}
+
+== 5. 审批后月结单口径（2026-09）：total_cents 已包含调整
+{
+    "org_id": "33333333-3333-4333-8333-333333333333",
+    "period_month": "2026-09",
+    "locked": false,
+    "total_cents": 330000,
+    "active_count": 2,
+    "pending_total_cents": 0,
+    "pending_count": 0,
+    "voided_total_cents": 0,
+    "voided_count": 0,
+    "by_status": {
+        "active": {
+            "count": 2,
+            "amount_cents": 330000
+        }
+    }
+}
+
+== 6. 平台管理员锁定 2026-09 月结
+HTTP 201
+{
+    "period_month": "2026-09",
+    "locked": true,
+    "locked_by": "b2b2b2b2-b2b2-4b2b-8b2b-b2b2b2b2b2b2",
+    "locked_at": "2026-11-23T16:36:47.255120+00:00"
+}
+
+== 7. 回款金额被更正：100000 → 150000 分，然后重算该 payment
+PAYMENT_UPDATED=150000
+HTTP 201
+{
+  "mode": "delta_in_current_period",
+  "delta_cents": 5000,
+  "current_period": "2026-11",
+  "original": {
+    "id": "9a9a9a9a-9a9a-4a9a-8a9a-9a9a9a9a9a9a",
+    "status": "active",
+    "period_month": "2026-09",
+    "amount_cents": 10000,
+    "month_locked": true,
+    "voided_reason": null
+  },
+  "result_record": {
+    "id": "6baffe4a-0281-4b94-8093-ba6eb2b6a1b8",
+    "kind": "adjustment",
+    "origin": "recalculation_delta",
+    "status": "active",
+    "amount_cents": 5000,
+    "period_month": "2026-11",
+    "month_locked": false,
+    "note": "重算差额：回款 88888888 原 10000 分 → 新 15000 分（原记录月份 2026-09 已锁定）"
+  }
+}
+
+== 8. 锁定月 2026-09 合计不变；差额进入当前未锁定月 2026-11
+-- 2026-09 --
+{
+    "org_id": "33333333-3333-4333-8333-333333333333",
+    "period_month": "2026-09",
+    "locked": true,
+    "total_cents": 330000,
+    "active_count": 2,
+    "pending_total_cents": 0,
+    "pending_count": 0,
+    "voided_total_cents": 0,
+    "voided_count": 0,
+    "by_status": {
+        "active": {
+            "count": 2,
+            "amount_cents": 330000
+        }
+    }
+}
+-- 2026-11 --
+{
+    "org_id": "33333333-3333-4333-8333-333333333333",
+    "period_month": "2026-11",
+    "locked": false,
+    "total_cents": 5000,
+    "active_count": 1,
+    "pending_total_cents": 0,
+    "pending_count": 0,
+    "voided_total_cents": 0,
+    "voided_count": 0,
+    "by_status": {
+        "active": {
+            "count": 1,
+            "amount_cents": 5000
+        }
+    }
+}
+
+== 9. 审计日志（该调整：调整前后金额 / 操作人 / 审批人）
+{"action": "commission.adjustment.approve", "before_amount_cents": 0, "after_amount_cents": 320000, "actor_id": "66666666-6666-4666-8666-666666666666", "approver_id": "a1a1a1a1-a1a1-4a1a-8a1a-a1a1a1a1a1a1"}
+{"action": "commission.adjustment.create", "before_amount_cents": 0, "after_amount_cents": 320000, "actor_id": "66666666-6666-4666-8666-666666666666", "approver_id": null}
+
+== 10. 重算审计日志（before=原金额 10000，after=重算后 15000）
+{"action": "commission.recalculate", "before_amount_cents": 10000, "after_amount_cents": 15000, "actor_id": "a1a1a1a1-a1a1-4a1a-8a1a-a1a1a1a1a1a1", "approver_id": null}
+{
+  "mode": "delta_in_current_period",
+  "payment_id": "88888888-8888-4888-8888-888888888888",
+  "contract_id": "77777777-7777-4777-8777-777777777777",
+  "delta_cents": 5000,
+  "month_locked": true,
+  "operator_roles": [
+    "channel_supervisor"
+  ],
+  "delta_record_id": "6baffe4a-0281-4b94-8093-ba6eb2b6a1b8",
+  "correction_reason": "回款金额录入更正：1000 元 → 1500 元",
+  "original_record_id": "9a9a9a9a-9a9a-4a9a-8a9a-9a9a9a9a9a9a",
+  "settled_period_month": "2026-11",
+  "original_period_month": "2026-09"
+}
+
+演示结束。

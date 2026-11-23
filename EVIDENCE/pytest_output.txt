@@ -1,0 +1,33 @@
+$ .venv/bin/pytest -v --durations=5
+============================= test session starts ==============================
+platform linux -- Python 3.12.13, pytest-8.3.4, pluggy-1.7.0 -- commission-corrections-api/.venv/bin/python3.12
+cachedir: .pytest_cache
+rootdir: commission-corrections-api
+configfile: pytest.ini
+testpaths: tests
+plugins: anyio-4.16.0
+collecting ... collected 15 items
+
+tests/test_corrections.py::test_ac1_pending_adjustment_excluded_from_monthly_total PASSED [  6%]
+tests/test_corrections.py::test_ac2_applicant_cannot_approve_own_adjustment_returns_403 PASSED [ 13%]
+tests/test_corrections.py::test_ac3_recalculate_locked_month_creates_delta_and_keeps_original_locked PASSED [ 20%]
+tests/test_corrections.py::test_ac4_audit_log_contains_before_after_amounts_and_approver PASSED [ 26%]
+tests/test_corrections.py::test_ac4_recalc_audit_log_contains_before_after_amounts PASSED [ 33%]
+tests/test_corrections.py::test_recalculate_unlocked_month_voids_original_and_supersedes PASSED [ 40%]
+tests/test_corrections.py::test_adjustment_amount_limit_and_negative_amount PASSED [ 46%]
+tests/test_corrections.py::test_adjustment_note_length_limit PASSED      [ 53%]
+tests/test_corrections.py::test_reject_keeps_record_out_of_monthly_total PASSED [ 60%]
+tests/test_corrections.py::test_adjustment_trace_records_manual_input_and_approval_chain PASSED [ 66%]
+tests/test_corrections.py::test_org_scope_isolation PASSED               [ 73%]
+tests/test_corrections.py::test_rank_requirements PASSED                 [ 80%]
+tests/test_corrections.py::test_adjustment_into_locked_month_is_rejected PASSED [ 86%]
+tests/test_corrections.py::test_recalculate_without_active_record_returns_409 PASSED [ 93%]
+tests/test_corrections.py::test_month_lock_endpoint_requires_admin PASSED [100%]
+
+============================= slowest 5 durations ==============================
+0.21s setup    tests/test_corrections.py::test_ac1_pending_adjustment_excluded_from_monthly_total
+0.09s setup    tests/test_corrections.py::test_rank_requirements
+0.08s call     tests/test_corrections.py::test_ac1_pending_adjustment_excluded_from_monthly_total
+0.08s setup    tests/test_corrections.py::test_recalculate_unlocked_month_voids_original_and_supersedes
+0.08s setup    tests/test_corrections.py::test_reject_keeps_record_out_of_monthly_total
+============================== 15 passed in 1.88s ==============================

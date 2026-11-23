@@ -1,0 +1,25 @@
+$ docker ps --filter name=commission-pg
+NAMES       IMAGE                    STATUS                        PORTS
+commission-pg   pgvector/pgvector:pg16   Up About a minute (healthy)   0.0.0.0:55432->5432/tcp, [::]:55432->5432/tcp
+
+$ docker compose exec -T db psql -U comm -d commission -c "select version();"
+                                                           version                                                            
+------------------------------------------------------------------------------------------------------------------------------
+ PostgreSQL 16.16 (Debian 16.16-1.pgdg12+1) on x86_64-pc-linux-gnu, compiled by gcc (Debian 12.2.0-14+deb12u1) 12.2.0, 64-bit
+(1 row)
+
+$ .venv/bin/alembic current
+0001_init (head)
+
+$ docker compose exec -T db psql -U comm -d commission -c "\dt"
+              List of relations
+ Schema |        Name        | Type  | Owner 
+--------+--------------------+-------+-------
+ public | alembic_version    | table | comm
+ public | audit_logs         | table | comm
+ public | commission_records | table | comm
+ public | contracts          | table | comm
+ public | month_locks        | table | comm
+ public | payments           | table | comm
+(6 rows)
+
